@@ -49,4 +49,6 @@ dependencies {
     implementation("com.airbnb.android:lottie:5.2.0")
     implementation ("io.github.inflationx:calligraphy3:3.1.1")
     implementation ("io.github.inflationx:viewpump:2.0.3")
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
 }

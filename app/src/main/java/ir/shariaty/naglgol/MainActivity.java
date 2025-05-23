@@ -1,39 +1,42 @@
 package ir.shariaty.naglgol;
 
+import android.content.Intent;
 import android.os.Bundle;
-
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
 import com.airbnb.lottie.LottieAnimationView;
 import com.bumptech.glide.Glide;
-import java.util.Random;
+
+
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
     TextView TextView;
     Button Btn;
+    ImageButton shareBtn;
     ImageView ImageView;
     LottieAnimationView animationView;
 
-    String[] quotes = {
-            "زندگی کوتاه‌تر از آن است که به بدی بگذرد.",
-            "امید، مهم‌ترین نیروی زندگی است.",
-            "باور داشته باش، موفقیت نزدیکه.",
-            "هیچ‌وقت دیر نیست برای شروع دوباره.",
-            "لبخند بزن، دنیا قشنگ‌تر میشه!"
-    };
-
+    // انیمیشن‌ها همچنان هستن
     int[] animations = {
             R.raw.animate1,
             R.raw.animate2,
             R.raw.animate3,
             R.raw.animate4
     };
+
+    // متغیر برای ذخیره نقل قول فعلی
+    String currentQuote = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +45,11 @@ public class MainActivity extends AppCompatActivity {
 
         TextView = findViewById(R.id.TextView);
         Btn = findViewById(R.id.Btn);
+        shareBtn = findViewById(R.id.shareBtn);
         ImageView = findViewById(R.id.ImageView);
         animationView = findViewById(R.id.lottieAnim);
 
+        // لود عکس با Glide
         String imageUrl = "https://th.bing.com/th/id/OIP.KNDZ-nHK9QR9RWZFRBTrrQAAAA?rs=1&pid=ImgDetMain";
         Glide.with(this)
                 .load(imageUrl)
@@ -60,19 +65,55 @@ public class MainActivity extends AppCompatActivity {
                 animationView.playAnimation();
             }
         });
+
+        shareBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                shareQuote();
+            }
+        });
     }
 
     private void showRandomQuote() {
-        Random random = new Random();
-        int index = random.nextInt(quotes.length);
-        TextView.setText(quotes[index]);
+        QuoteApi api = ApiClient.getClient().create(QuoteApi.class);
+        Call<Quote> call = api.getRandomQuote();
 
-        showRandomAnimation();
+        call.enqueue(new Callback<Quote>() {
+            @Override
+            public void onResponse(Call<Quote> call, Response<Quote> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    currentQuote = response.body().getText();
+                    TextView.setText(currentQuote);
+                    showRandomAnimation();
+                } else {
+                    currentQuote = "";
+                    TextView.setText("خطا در دریافت نقل‌قول");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Quote> call, Throwable t) {
+                currentQuote = "";
+                TextView.setText("ارتباط با سرور برقرار نشد");
+            }
+        });
     }
+
     private void showRandomAnimation() {
-        Random random = new Random();
-        int index = random.nextInt(animations.length);
+        int index = (int) (Math.random() * animations.length);
         animationView.setAnimation(animations[index]);
         animationView.playAnimation();
+    }
+
+    private void shareQuote() {
+        if (currentQuote.isEmpty()) return;
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, currentQuote);
+        sendIntent.setType("text/plain");
+
+        Intent shareIntent = Intent.createChooser(sendIntent, "اشتراک گذاری نقل قول");
+        startActivity(shareIntent);
     }
 }
